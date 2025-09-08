@@ -1,0 +1,37 @@
+/*
+  X-Frame-Options: ALLOWALL
+  X-XSS-Protection: 1; mode=block
+  X-Content-Type-Options: nosniff
+
+/*.js
+  Content-Type: application/javascript
+
+/*.mjs
+  Content-Type: application/javascript
+
+/*.jsx
+  Content-Type: application/javascript
+
+/*.css
+  Content-Type: text/css
+
+/*.html
+  Content-Type: text/html
+
+/*.json
+  Content-Type: application/json
+
+/*.svg
+  Content-Type: image/svg+xml
+
+/*.png
+  Content-Type: image/png
+
+/*.jpg
+  Content-Type: image/jpeg
+
+/*.gif
+  Content-Type: image/gif
+
+/*.pdf
+  Content-Type: application/pdf
