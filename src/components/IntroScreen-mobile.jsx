@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import IntroScreenMobile from "./IntroScreen-mobile";
 
 /**
  * IntroScreen 컴포넌트
@@ -12,9 +11,6 @@ import IntroScreenMobile from "./IntroScreen-mobile";
  * - 네비게이션 및 툴바 기능
  */
 function IntroScreen() {
-  // 화면 크기 상태 관리
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
-  
   // 상태 관리 변수들
   const [showIntro, setShowIntro] = useState(true); // 인트로 화면 표시 여부
   const [logoOpacity, setLogoOpacity] = useState(0); // 로고 투명도
@@ -30,7 +26,7 @@ function IntroScreen() {
   const [subTitle2Opacity, setSubTitle2Opacity] = useState(0); // VQ-Main-subTitle2.png 투명도
   const [titleOpacity, setTitleOpacity] = useState(0); // VQ-Main-Title.png 투명도
   const [titleTransform, setTitleTransform] = useState('translateX(-100%)'); // VQ-Main-Title.png 위치
-  const [currentPage, setCurrentPage] = useState(0); // 현재 페이지 번호 (0: 표지, 1-7: 내부 페이지)
+  // 스크롤 방식에서는 currentPage 상태가 필요하지 않음
   const [selectedGif, setSelectedGif] = useState(null); // 선택된 GIF 파일
   const [isModalOpen, setIsModalOpen] = useState(false); // 모달 열림 상태
   const [modalSourcePage, setModalSourcePage] = useState(null); // 모달을 연 페이지
@@ -66,27 +62,31 @@ function IntroScreen() {
       // ease-out 효과 적용
       const easeOut = 1 - Math.pow(1 - progress, 3);
       
-      // 1단계: opacity 0 → 1, scale 0 → 1.5 (첫 1.5초)
+      // 반응형 최종 설정 계산 (1024px 미만에서만 적용)
+      const finalSettings = window.innerWidth < 1024 ? getResponsiveMainLogoFinalSettings() : { scale: 1.0, position: { x: 42, y: -41 } };
+      const maxScale = 1.5; // 최대 scale은 고정
+      
+      // 1단계: opacity 0 → 1, scale 0 → maxScale (첫 1.5초)
       if (progress < 0.375) { // 1.5초 / 4초 = 0.375
         const firstPhaseProgress = progress / 0.375;
         setMainLogoOpacity(firstPhaseProgress);
-        setMainLogoScale(firstPhaseProgress * 1.5);
+        setMainLogoScale(firstPhaseProgress * maxScale);
         setMainLogoPosition({ x: 0, y: 0 }); // 중앙 위치
       }
       // 대기 단계: 1초 대기 (1.5초~2.5초)
       else if (progress < 0.625) { // 2.5초 / 4초 = 0.625
         setMainLogoOpacity(1);
-        setMainLogoScale(1.5);
+        setMainLogoScale(maxScale);
         setMainLogoPosition({ x: 0, y: 0 }); // 중앙 위치 유지
       }
-      // 2단계: 오른쪽 위로 이동하면서 scale 1.5 → 1 (2.5초~4초)
+      // 2단계: 반응형 위치로 이동하면서 scale maxScale → finalScale (2.5초~4초)
       else {
         setMainLogoOpacity(1);
         const moveProgress = (progress - 0.625) / 0.375; // 1.5초 / 4초 = 0.375
-        setMainLogoScale(1.5 - 0.5 * moveProgress); // 1.5에서 1로 줄어듦
-        // 오른쪽 위 모서리로 이동 (컨테이너 기준 42%, -41%로 이동)
-        const moveX = moveProgress * 42; // 오른쪽으로 42% 이동
-        const moveY = -moveProgress * 41; // 위로 41% 이동
+        setMainLogoScale(maxScale - (maxScale - finalSettings.scale) * moveProgress); // maxScale에서 finalScale로 줄어듦
+        // 반응형 위치로 이동
+        const moveX = moveProgress * finalSettings.position.x; // 반응형 X 위치로 이동
+        const moveY = moveProgress * finalSettings.position.y; // 반응형 Y 위치로 이동
         setMainLogoPosition({ x: moveX, y: moveY });
       }
 
@@ -262,19 +262,53 @@ function IntroScreen() {
   };
 
   /**
-   * 화면 크기 변경 감지 및 이미지 크기 업데이트
+   * 반응형 Main-Logo 최종 설정 계산 함수 (1024px 미만만 적용)
+   * @returns {Object} 조정된 최종 scale과 위치 값
+   */
+  const getResponsiveMainLogoFinalSettings = () => {
+    const screenWidth = window.innerWidth;
+    if (screenWidth >= 1024) {
+      return {
+        scale: 1.0,
+        position: { x: 42, y: -41 } // 데스크톱: 기본 위치
+      };
+    } else if (screenWidth >= 768) {
+      return {
+        scale: 0.8, // 태블릿: 80%
+        position: { x: 41, y: -41 } // 태블릿: 약간 왼쪽으로, 위로 덜 이동
+      };
+    } else if (screenWidth >= 480) {
+      return {
+        scale: 0.4, // 큰 모바일: 70%
+        position: { x: 41, y: -41 } // 큰 모바일: 더 왼쪽으로, 위로 덜 이동
+      };
+    } else {
+      return {
+        scale: 0.3, // 작은 모바일: 60%
+        position: { x: 40, y: -40 } // 작은 모바일: 가장 왼쪽으로, 위로 가장 덜 이동
+      };
+    }
+  };
+
+  /**
+   * 화면 크기 변경 감지 및 이미지 크기 업데이트 (1024px 미만만 적용)
    */
   useEffect(() => {
     const handleResize = () => {
       // 화면 크기가 변경되면 컴포넌트를 다시 렌더링하여 이미지 크기 업데이트
-      setCurrentPage(prev => prev);
-      // 모바일/데스크톱 분기 업데이트
-      setIsMobile(window.innerWidth < 1024);
+      // 스크롤 방식에서는 currentPage 상태가 없으므로 별도 처리 불필요
+      
+      // 1024px 미만에서만 Main-Logo 반응형 설정 업데이트
+      if (window.innerWidth < 1024 && mainLogoOpacity > 0 && mainLogoScale > 0) {
+        const finalSettings = getResponsiveMainLogoFinalSettings();
+        setMainLogoScale(finalSettings.scale);
+        setMainLogoPosition(finalSettings.position);
+      }
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [mainLogoOpacity, mainLogoScale]);
 
   // VQ 페이지별 개별 이미지 위치 설정 (절대 위치)
   const individualImagePositions = {
@@ -733,23 +767,6 @@ function IntroScreen() {
   }, []);
 
   /**
-   * 이전 페이지로 이동
-   */
-  const goToPreviousPage = () => {
-    if (currentPage > 0) {
-      const newPage = currentPage - 1;
-      setCurrentPage(newPage);
-      
-      // 표지 페이지(0번)로 돌아올 때 애니메이션 재실행
-      if (newPage === 0) {
-        setTimeout(() => {
-          startCoverPageAnimation();
-        }, 300);
-      }
-    }
-  };
-
-  /**
    * 표지 페이지 애니메이션 시작 함수
    */
   const startCoverPageAnimation = () => {
@@ -760,20 +777,6 @@ function IntroScreen() {
     setTimeout(() => {
       startMainLogoAnimation();
     }, 1000);
-  };
-
-  /**
-   * 다음 페이지로 이동
-   */
-  const goToNextPage = () => {
-    if (currentPage < 23) { // VQ는 24페이지 (0-23)
-      setCurrentPage(currentPage + 1);
-      
-      // 표지 페이지(0번)에서 다음 페이지로 이동할 때 애니메이션 초기화
-      if (currentPage === 0) {
-        resetAnimationStates();
-      }
-    }
   };
 
   /**
@@ -814,20 +817,10 @@ function IntroScreen() {
 
   /**
    * 모달 닫기 핸들러
-   * 모달이 닫힐 때 해당 페이지로 이동
    */
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedGif(null);
-
-    // 모달이 닫힐 때 해당 페이지로 이동
-    if (modalSourcePage !== null) {
-      setTimeout(() => {
-        // 페이지 ID를 인덱스로 변환 (표지 페이지는 0, 나머지는 ID-1)
-        const pageIndex = modalSourcePage === 1 ? 0 : modalSourcePage - 1;
-        setCurrentPage(pageIndex);
-      }, 100);
-    }
     setModalSourcePage(null);
   };
 
@@ -854,7 +847,6 @@ function IntroScreen() {
     setSubTitle2Opacity(0);
     setTitleOpacity(0);
     setTitleTransform('translateX(-100%)');
-    setCurrentPage(0);
     setSelectedGif(null);
     setIsModalOpen(false);
     setModalSourcePage(null);
@@ -953,11 +945,6 @@ function IntroScreen() {
     }
   };
 
-  // 모바일 화면인 경우 모바일 컴포넌트 렌더링
-  if (isMobile) {
-    return <IntroScreenMobile />;
-  }
-
   return (
     <div className="w-full h-screen overflow-hidden relative">
       {/* 인트로 화면 (흰 화면 + 로고) */}
@@ -981,292 +968,274 @@ function IntroScreen() {
 
       {/* 본 화면 */}
       {mainScreenVisible && (
-        <div className="w-full h-full relative bg-white">
-          {/* 왼쪽 위 VQ 로고 (홈 버튼) */}
-          <button
-            onClick={handleHomeClick}
-            className="absolute top-6 left-6 z-40 cursor-pointer"
-          >
-            <img 
-              src="/interacivefile/VQFile/MainImg/VQ-Logo2.png"
-              alt="VQ Logo"
-              className="h-8 w-auto"
-            />
-          </button>
-
-          {/* 오른쪽 툴바 - 상단 아이콘들 */}
-          <div className="absolute top-0 right-0 h-full z-40 flex flex-col gap-3 bg-gray-800 p-3">
-            {/* 홈(Intro) 버튼 */}
+        <div className="w-full h-full relative bg-white flex flex-col">
+          {/* 상단 중앙 VQ 로고 (홈 버튼) */}
+          <div className="flex justify-center items-center py-4 bg-white z-40">
             <button
-              onClick={() => window.location.href = '/'}
-              className="w-8 h-8 text-white flex items-center justify-center hover:text-gray-300 hover:bg-gray-700 rounded transition-colors duration-300 cursor-pointer"
-              title="홈(Intro)"
+              onClick={handleHomeClick}
+              className="cursor-pointer"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-            </button>
-
-
-            {/* 프린터 버튼 */}
-            <button
-              onClick={handlePrintClick}
-              className="w-8 h-8 text-white flex items-center justify-center hover:text-gray-300 hover:bg-gray-700 rounded transition-colors duration-300 cursor-pointer"
-              title="프린트"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-              </svg>
-            </button>
-
-            {/* PDF 다운로드 버튼 */}
-            <button
-              onClick={handleDownloadClick}
-              className="w-8 h-8 text-white flex items-center justify-center hover:text-gray-300 hover:bg-gray-700 rounded transition-colors duration-300 cursor-pointer"
-              title="PDF 다운로드"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </button>
-
-            {/* 공유 버튼 */}
-            <button
-              onClick={handleShareClick}
-              className="w-8 h-8 text-white flex items-center justify-center hover:text-gray-300 hover:bg-gray-700 rounded transition-colors duration-300 cursor-pointer"
-              title="공유"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-              </svg>
+              <img 
+                src="/interacivefile/VQFile/MainImg/VQ-Logo2.png"
+                alt="VQ Logo"
+                className="h-10 w-auto"
+              />
             </button>
           </div>
 
-          {/* 중앙 이미지 컨테이너 */}
-          <div className="absolute top-2.5 left-32 right-20 bottom-2.5 flex items-center justify-center">
-            <div className="relative flex items-center justify-center w-full h-full">
-              {/* 중앙 이미지 */}
-              <div 
-                className="h-full overflow-hidden shadow-2xl border-2 border-black relative"
-                style={{
-                  opacity: imageOpacity,
-                  transition: 'opacity 0.3s ease-in-out',
-                  aspectRatio: 'auto',
-                  width: 'auto'
-                }}
-              >
-                {/* 현재 페이지의 배경 이미지 */}
-                <img
-                  src={pageImages[currentPage].backgroundImage}
-                  alt={pageImages[currentPage].name}
-                  className="w-full h-full object-cover"
-                  style={{
-                    transform: currentPage === 0 ? `scale(${imageScale})` : 'scale(1)',
-                    transition: 'transform 0.3s ease-in-out'
+          {/* 스크롤 컨테이너 - Book.jsx 방식 적용 */}
+          <div className="flex-1 overflow-y-auto pb-20">
+            {/* 페이지들을 세로로 배치 */}
+            <div className="w-full space-y-0">
+              {pageImages.map((page, index) => (
+                <div
+                  key={page.id}
+                  className="relative overflow-hidden bg-white"
+                  style={{ 
+                    width: '100%', 
+                    aspectRatio: 'auto',
+                    // minHeight: '100vh'
                   }}
-                />
-
-                {/* 표지 페이지(0번)일 때만 Main-Logo.png와 오버레이 이미지들 표시 */}
-                {currentPage === 0 && (
-                  <>
-                    {/* Main-Logo.png */}
-                    <div 
-                      className="absolute inset-0 flex items-center justify-center"
+                >
+                  <div className="w-full h-full flex flex-col justify-center items-center p-4 text-center relative">
+                    {/* 페이지 배경 이미지 */}
+                    <img
+                      src={page.backgroundImage}
+                      alt={page.name}
+                      className="w-full h-full object-cover"
                       style={{
-                        opacity: mainLogoOpacity,
-                        transform: `translate(${mainLogoPosition.x}%, ${mainLogoPosition.y}%) scale(${mainLogoScale})`,
-                        transition: 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out'
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
                       }}
-                    >
-                      <img
-                        src="/interacivefile/VQFile/MainImg/Main-Logo.png"
-                        alt="Main Logo"
-                        className="max-w-full max-h-full object-contain"
-                      />
-                    </div>
+                    />
 
-                    {/* VQ-Main-subTitle.png - 왼쪽에서 나타남 */}
-                    <div 
-                      className="absolute inset-0"
-                      style={{
-                        opacity: subTitleOpacity,
-                        transform: subTitleTransform,
-                        transition: 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out'
-                      }}
-                    >
-                      <img
-                        src="/interacivefile/VQFile/MainImg/VQ-Main-subTitle.png"
-                        alt="VQ Main SubTitle"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-
-                    {/* VQ-Main-subTitle2.png - 바뀌는 이미지 */}
-                    <div 
-                      className="absolute inset-0"
-                      style={{
-                        opacity: subTitle2Opacity,
-                        transition: 'opacity 0.3s ease-in-out'
-                      }}
-                    >
-                      <img
-                        src="/interacivefile/VQFile/MainImg/VQ-Main-subTitle2.png"
-                        alt="VQ Main SubTitle 2"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-
-                    {/* VQ-Main-Title.png - 왼쪽에서 나타남 */}
-                    <div 
-                      className="absolute inset-0"
-                      style={{
-                        opacity: titleOpacity,
-                        transform: titleTransform,
-                        transition: 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out'
-                      }}
-                    >
-                      <img
-                        src="/interacivefile/VQFile/MainImg/VQ-Main-Title.png"
-                        alt="VQ Main Title"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </>
-                )}
-
-                {/* 내부 페이지들(1-23번)의 인터랙티브 요소들 */}
-                {currentPage > 0 && (
-                  <>
-                    {/* 18번 페이지 - 비디오 카테고리 */}
-                    {currentPage === 18 && (
-                      <div className="absolute inset-0 p-4 overflow-y-auto">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
-                          {videoCategories.map((category, categoryIndex) => (
-                            <div key={categoryIndex} className="flex flex-col">
-                              {/* 카테고리 제목 */}
-                              <h3 
-                                className="text-xl font-black mb-3 text-center"
-                                style={{ 
-                                  color: category.color,
-                                  textShadow: '1px 1px 0px #000000, -1px -1px 0px #000000, 1px -1px 0px #000000, -1px 1px 0px #000000'
-                                }}
-                              >
-                                {category.title}
-                              </h3>
-                              
-                              {/* YouTube 플레이어들 */}
-                              <div className="flex-1 space-y-2">
-                                {category.videos.map((videoUrl, videoIndex) => {
-                                  const videoId = getYouTubeVideoId(videoUrl);
-                                  
-                                  return (
-                                    <div key={videoIndex} className="relative">
-                                      {videoId ? (
-                                        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                                          <iframe
-                                            src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1&fs=1&cc_load_policy=0&iv_load_policy=3&autohide=0`}
-                                            title={`${category.title} ${videoIndex + 1}`}
-                                            frameBorder="0"
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                            allowFullScreen
-                                            className="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
-                                            style={{ border: 'none' }}
-                                          />
-                                        </div>
-                                      ) : (
-                                        <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-                                          <span className="text-gray-500">비디오 로드 실패</span>
-                                        </div>
-                                      )}
-                                      {/* <p className="text-xs text-gray-600 mt-1 text-center">
-                                        {category.title} {videoIndex + 1}
-                                      </p> */}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ))}
+                    {/* 표지 페이지(0번)일 때만 Main-Logo.png와 오버레이 이미지들 표시 */}
+                    {index === 0 && (
+                      <>
+                        {/* Main-Logo.png */}
+                        <div 
+                          className="absolute inset-0 flex items-center justify-center"
+                          style={{
+                            opacity: mainLogoOpacity,
+                            transform: `translate(${mainLogoPosition.x}%, ${mainLogoPosition.y}%) scale(${mainLogoScale})`,
+                            transition: 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out'
+                          }}
+                        >
+                          <img
+                            src="/interacivefile/VQFile/MainImg/Main-Logo.png"
+                            alt="Main Logo"
+                            className="max-w-full max-h-full object-contain"
+                          />
                         </div>
-                      </div>
+
+                        {/* VQ-Main-subTitle.png - 왼쪽에서 나타남 */}
+                        <div 
+                          className="absolute inset-0"
+                          style={{
+                            opacity: subTitleOpacity,
+                            transform: subTitleTransform,
+                            transition: 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out'
+                          }}
+                        >
+                          <img
+                            src="/interacivefile/VQFile/MainImg/VQ-Main-subTitle.png"
+                            alt="VQ Main SubTitle"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        {/* VQ-Main-subTitle2.png - 바뀌는 이미지 */}
+                        <div 
+                          className="absolute inset-0"
+                          style={{
+                            opacity: subTitle2Opacity,
+                            transition: 'opacity 0.3s ease-in-out'
+                          }}
+                        >
+                          <img
+                            src="/interacivefile/VQFile/MainImg/VQ-Main-subTitle2.png"
+                            alt="VQ Main SubTitle 2"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        {/* VQ-Main-Title.png - 왼쪽에서 나타남 */}
+                        <div 
+                          className="absolute inset-0"
+                          style={{
+                            opacity: titleOpacity,
+                            transform: titleTransform,
+                            transition: 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out'
+                          }}
+                        >
+                          <img
+                            src="/interacivefile/VQFile/MainImg/VQ-Main-Title.png"
+                            alt="VQ Main Title"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </>
                     )}
 
-                    {/* 다른 페이지들의 section-img 이미지들을 개별적으로 배치 */}
-                    {currentPage !== 18 && sectionImgMapping[currentPage + 1] &&
-                      individualImagePositions[currentPage + 1] && (
-                        <>
-                          {sectionImgMapping[currentPage + 1].map((mediaSrc, imgIndex) => {
-                            const isVideo = mediaSrc.endsWith(".mp4");
-                            const imagePosition = individualImagePositions[currentPage + 1]?.[imgIndex];
-                            
-                            // 이미지 위치 설정이 없는 경우 렌더링하지 않음
-                            if (!imagePosition) {
-                              return null;
-                            }
-                            
-                            return (
-                              <div
-                                key={imgIndex}
-                                className="absolute cursor-pointer hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-blue-500 rounded-lg pointer-events-auto bg-transparent"
-                                style={imagePosition}
-                                onClick={(e) =>
-                                  handleSectionImgClick(mediaSrc, e, currentPage + 1)
+                    {/* 내부 페이지들(1-23번)의 인터랙티브 요소들 */}
+                    {index > 0 && (
+                      <>
+                        {/* 18번 페이지 - 비디오 카테고리 */}
+                        {index === 18 && (
+                          <div className="absolute inset-0 p-2 overflow-y-auto">
+                            <div className="grid grid-cols-1 gap-2 h-full">
+                              {videoCategories.map((category, categoryIndex) => (
+                                <div key={categoryIndex} className="flex flex-col">
+                                  {/* 카테고리 제목 */}
+                                  <h3 
+                                    className="text-lg font-black mb-2 text-center"
+                                    style={{ 
+                                      color: category.color,
+                                      textShadow: '1px 1px 0px #000000, -1px -1px 0px #000000, 1px -1px 0px #000000, -1px 1px 0px #000000'
+                                    }}
+                                  >
+                                    {category.title}
+                                  </h3>
+                                  
+                                  {/* YouTube 플레이어들 */}
+                                  <div className="flex-1 space-y-1">
+                                    {category.videos.map((videoUrl, videoIndex) => {
+                                      const videoId = getYouTubeVideoId(videoUrl);
+                                      
+                                      return (
+                                        <div key={videoIndex} className="relative">
+                                          {videoId ? (
+                                            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                                              <iframe
+                                                src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1&fs=1&cc_load_policy=0&iv_load_policy=3&autohide=0`}
+                                                title={`${category.title} ${videoIndex + 1}`}
+                                                frameBorder="0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                allowFullScreen
+                                                className="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+                                                style={{ border: 'none' }}
+                                              />
+                                            </div>
+                                          ) : (
+                                            <div className="w-full h-24 bg-gray-200 rounded-lg flex items-center justify-center">
+                                              <span className="text-gray-500 text-sm">비디오 로드 실패</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 다른 페이지들의 section-img 이미지들을 개별적으로 배치 */}
+                        {index !== 18 && sectionImgMapping[index + 1] &&
+                          individualImagePositions[index + 1] && (
+                            <>
+                              {sectionImgMapping[index + 1].map((mediaSrc, imgIndex) => {
+                                const isVideo = mediaSrc.endsWith(".mp4");
+                                const imagePosition = individualImagePositions[index + 1]?.[imgIndex];
+                                
+                                // 이미지 위치 설정이 없는 경우 렌더링하지 않음
+                                if (!imagePosition) {
+                                  return null;
                                 }
-                              >
-                                {isVideo ? (
-                                  <video
-                                    src={mediaSrc}
-                                    className="w-full h-full rounded-lg object-contain opacity-100 cursor-pointer hover:scale-105 transition-transform duration-300"
-                                    controls
-                                    muted
-                                    loop
-                                    autoPlay={false}
-                                  />
-                                ) : (
-                                  <img
-                                    src={mediaSrc}
-                                    alt={`Section ${currentPage + 1}-${imgIndex + 1}`}
-                                    className="w-full h-full object-contain opacity-0 hover:opacity-100 transition-opacity duration-300"
-                                  />
-                                )}
-                              </div>
-                            );
-                          })}
-                        </>
-                      )}
+                                
+                                return (
+                                  <div
+                                    key={imgIndex}
+                                    className="absolute cursor-pointer hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-blue-500 rounded-lg pointer-events-auto bg-transparent"
+                                    style={imagePosition}
+                                    onClick={(e) =>
+                                      handleSectionImgClick(mediaSrc, e, index + 1)
+                                    }
+                                  >
+                                    {isVideo ? (
+                                      <video
+                                        src={mediaSrc}
+                                        className="w-full h-full rounded-lg object-contain opacity-100 cursor-pointer hover:scale-105 transition-transform duration-300"
+                                        controls
+                                        muted
+                                        loop
+                                        autoPlay={false}
+                                      />
+                                    ) : (
+                                      <img
+                                        src={mediaSrc}
+                                        alt={`Section ${index + 1}-${imgIndex + 1}`}
+                                        className="w-full h-full object-contain opacity-0 hover:opacity-100 transition-opacity duration-300"
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </>
+                          )}
 
-                  </>
-                )}
-              </div>
+                      </>
+                    )}
 
-              {/* 페이지 네비게이션 화살표 - 중앙 이미지 옆에 배치 */}
-              <div className="ml-4 flex flex-col gap-2">
-                <button 
-                  onClick={goToPreviousPage}
-                  disabled={currentPage === 0}
-                  className="w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors duration-300 shadow-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <button 
-                  onClick={goToNextPage}
-                  disabled={currentPage === pageImages.length - 1}
-                  className="w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors duration-300 shadow-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
+                    {/* 페이지 그림자 효과 */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent pointer-events-none"></div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* 페이지 정보 표시 */}
-          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-4 py-2 rounded-full text-sm">
-            {pageImages[currentPage].name} ({currentPage + 1} / {pageImages.length})
+          {/* 하단 기능 탭 - 가로 배치 */}
+          <div className="absolute bottom-0 left-0 right-0 z-40 bg-gray-800 p-3">
+            <div className="flex justify-center items-center gap-4">
+              {/* 홈(Intro) 버튼 */}
+              <button
+                onClick={() => window.location.href = '/'}
+                className="w-10 h-10 text-white flex items-center justify-center hover:text-gray-300 hover:bg-gray-700 rounded transition-colors duration-300 cursor-pointer"
+                title="홈(Intro)"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              </button>
+
+              {/* 프린터 버튼 */}
+              <button
+                onClick={handlePrintClick}
+                className="w-10 h-10 text-white flex items-center justify-center hover:text-gray-300 hover:bg-gray-700 rounded transition-colors duration-300 cursor-pointer"
+                title="프린트"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+              </button>
+
+              {/* PDF 다운로드 버튼 */}
+              <button
+                onClick={handleDownloadClick}
+                className="w-10 h-10 text-white flex items-center justify-center hover:text-gray-300 hover:bg-gray-700 rounded transition-colors duration-300 cursor-pointer"
+                title="PDF 다운로드"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </button>
+
+              {/* 공유 버튼 */}
+              <button
+                onClick={handleShareClick}
+                className="w-10 h-10 text-white flex items-center justify-center hover:text-gray-300 hover:bg-gray-700 rounded transition-colors duration-300 cursor-pointer"
+                title="공유"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                </svg>
+              </button>
+            </div>
           </div>
+
         </div>
       )}
 
