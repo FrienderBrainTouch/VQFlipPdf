@@ -126,11 +126,55 @@ button:hover {
     -webkit-overflow-scrolling: touch;
   }
   
-  /* 모바일에서 스크롤바 숨김 */
+  /* 모바일에서 스크롤바 표시 */
   ::-webkit-scrollbar {
-    width: 0px;
+    width: 6px;
     background: transparent;
   }
+  
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 3px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background-color: rgba(229, 231, 235, 0.3);
+    border-radius: 3px;
+  }
+}
+
+/* 스크롤바 스타일링 */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thumb-gray-400::-webkit-scrollbar-thumb {
+  background-color: #9ca3af;
+  border-radius: 4px;
+}
+
+.scrollbar-track-gray-200::-webkit-scrollbar-track {
+  background-color: #e5e7eb;
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
 }
 
 /* 대형 화면 최적화 */

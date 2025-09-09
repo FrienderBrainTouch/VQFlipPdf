@@ -1083,7 +1083,7 @@ function IntroScreen() {
                       <>
                         {/* 18번 페이지 - 비디오 카테고리 */}
                         {index === 18 && (
-                          <div className="absolute inset-0 p-2 overflow-y-auto">
+                          <div className="absolute inset-0 p-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
                             <div className="grid grid-cols-1 gap-2 h-full">
                               {videoCategories.map((category, categoryIndex) => (
                                 <div key={categoryIndex} className="flex flex-col">
