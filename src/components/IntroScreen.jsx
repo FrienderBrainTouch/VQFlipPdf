@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import Model3D from "./Model3D";
 
 /**
  * IntroScreen 컴포넌트
@@ -22,11 +21,15 @@ function IntroScreen() {
   const [mainLogoOpacity, setMainLogoOpacity] = useState(0); // Main-Logo.png 투명도
   const [mainLogoScale, setMainLogoScale] = useState(0); // Main-Logo.png 스케일
   const [mainLogoPosition, setMainLogoPosition] = useState({ x: 0, y: 0 }); // Main-Logo.png 위치
+  const [subTitleOpacity, setSubTitleOpacity] = useState(0); // VQ-Main-subTitle.png 투명도
+  const [subTitleTransform, setSubTitleTransform] = useState('translateX(-100%)'); // VQ-Main-subTitle.png 위치
+  const [subTitle2Opacity, setSubTitle2Opacity] = useState(0); // VQ-Main-subTitle2.png 투명도
+  const [titleOpacity, setTitleOpacity] = useState(0); // VQ-Main-Title.png 투명도
+  const [titleTransform, setTitleTransform] = useState('translateX(-100%)'); // VQ-Main-Title.png 위치
   const [currentPage, setCurrentPage] = useState(0); // 현재 페이지 번호 (0: 표지, 1-7: 내부 페이지)
   const [selectedGif, setSelectedGif] = useState(null); // 선택된 GIF 파일
   const [isModalOpen, setIsModalOpen] = useState(false); // 모달 열림 상태
   const [modalSourcePage, setModalSourcePage] = useState(null); // 모달을 연 페이지
-  const [is3DModalOpen, setIs3DModalOpen] = useState(false); // 3D 모달 열림 상태
 
   // ref 변수들
   const animationRef = useRef(null);
@@ -77,11 +80,57 @@ function IntroScreen() {
         setMainLogoOpacity(1);
         const moveProgress = (progress - 0.625) / 0.375; // 1.5초 / 4초 = 0.375
         setMainLogoScale(1.5 - 0.5 * moveProgress); // 1.5에서 1로 줄어듦
-        // 오른쪽 위로 이동 (화면 크기에 따라 조정)
-        const moveX = moveProgress * 300; // 오른쪽으로 300px
-        const moveY = -moveProgress * 390; // 위로 390px
+        // 오른쪽 위 모서리로 이동 (컨테이너 기준 42%, -41%로 이동)
+        const moveX = moveProgress * 42; // 오른쪽으로 42% 이동
+        const moveY = -moveProgress * 41; // 위로 41% 이동
         setMainLogoPosition({ x: moveX, y: moveY });
       }
+
+      if (progress < 1) {
+        animationRef.current = requestAnimationFrame(animate);
+      } else {
+        // Main-Logo 애니메이션 완료 후 오버레이 애니메이션 시작
+        startOverlayAnimations();
+      }
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+  };
+
+  /**
+   * 오버레이 애니메이션 시작 함수
+   */
+  const startOverlayAnimations = () => {
+    // 1. VQ-Main-subTitle.png 왼쪽에서 나타남
+    setTimeout(() => {
+      animateOverlayFromLeft(setSubTitleOpacity, setSubTitleTransform, 1000);
+    }, 500);
+
+    // 2. VQ-Main-subTitle2.png로 바뀜
+    setTimeout(() => {
+      setSubTitleOpacity(0);
+      setSubTitle2Opacity(1);
+    }, 2000);
+
+    // 3. VQ-Main-Title.png 왼쪽에서 나타남
+    setTimeout(() => {
+      animateOverlayFromLeft(setTitleOpacity, setTitleTransform, 1000);
+    }, 2500);
+  };
+
+  /**
+   * 왼쪽에서 나타나는 오버레이 애니메이션 함수
+   */
+  const animateOverlayFromLeft = (setOpacity, setTransform, duration) => {
+    const startTime = performance.now();
+
+    const animate = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      setOpacity(easeOut);
+      setTransform(`translateX(${-100 + 100 * easeOut}%)`);
 
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate);
@@ -91,6 +140,76 @@ function IntroScreen() {
     animationRef.current = requestAnimationFrame(animate);
   };
 
+
+  // YouTube 비디오 ID 추출 함수
+  const getYouTubeVideoId = (url) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  // YouTube 썸네일 URL 생성 함수
+  const getYouTubeThumbnail = (videoId, quality = 'hqdefault') => {
+    return `https://img.youtube.com/vi/${videoId}/${quality}.jpg`;
+  };
+
+  // 비디오 카테고리 데이터
+  const videoCategories = [
+    {
+      title: "기업영상",
+      color: "#f51818",
+      videos: [
+        "https://youtu.be/2YWRzzADzNw",
+        "https://youtu.be/J89KuWAW87c",
+        "https://youtu.be/72Sq-BJUsqs"
+      ]
+    },
+    {
+      title: "기관영상",
+      color: "#f51818",
+      videos: [
+        "https://youtu.be/7b91z8DuvW0",
+        "https://youtu.be/VzwAiSr9Rpg",
+        "https://youtu.be/Sq64lYKgOhU"
+      ]
+    },
+    {
+      title: "인터뷰영상",
+      color: "#f51818",
+      videos: [
+        "https://youtu.be/Eu4Frvecd40",
+        "https://youtu.be/YBIfwqxkOEk",
+        "https://youtu.be/Hz4K1VOUEvs"
+      ]
+    },
+    {
+      title: "교육영상",
+      color: "#f51818",
+      videos: [
+        "https://youtu.be/wQ7HyzKQIDU",
+        "https://youtu.be/dz2P2VxmVz4",
+        "https://youtu.be/COSDutUnbxk"
+      ]
+    },
+    {
+      title: "모션그래픽",
+      color: "#f51818",
+      videos: [
+        "https://youtu.be/9Tecvh3k5dU",
+        "https://youtu.be/oKo8d7KoLco",
+        "https://youtu.be/6uaaYcdflHc"
+      ]
+    },
+    {
+      title: "3D VFX",
+      color: "#f51818",
+      videos: [
+        "https://youtu.be/hXTZvuxqWsY",
+        "https://youtu.be/Wh6Wm5WnZtE",
+        "https://youtu.be/j-Ra92wtxxw"
+      ]
+    }
+  ];
 
   // VQ section-img 이미지 매핑 (페이지별 상세 이미지)
   const sectionImgMapping = {
@@ -119,7 +238,7 @@ function IntroScreen() {
     17: ["/interacivefile/VQFile/sectionimg/17-1.png"],
     18: ["/interacivefile/VQFile/sectionimg/18-1.png"],
     19: [
-      "/interacivefile/VQFile/19-1-video.mp4",
+      // 비디오 카테고리 페이지 - YouTube 링크들
     ],
     20: ["/interacivefile/VQFile/sectionimg/20-1.png"],
     21: ["/interacivefile/VQFile/sectionimg/21-1.png"],
@@ -134,8 +253,8 @@ function IntroScreen() {
    * @returns {number} 조정된 크기
    */
   const getResponsiveImageSize = (baseSize) => {
-    const isMobile = window.innerWidth < 576;
-    return isMobile ? baseSize * 0.8 : baseSize;
+    const isLargeScreen = window.innerWidth >= 1024;
+    return isLargeScreen ? baseSize : baseSize * 0.8;
   };
 
   /**
@@ -160,7 +279,7 @@ function IntroScreen() {
         top: "17%",
         left: "9%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(300)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
       {
         // 2-2번 이미지 - 중단
@@ -168,7 +287,7 @@ function IntroScreen() {
         top: "48%",
         left: "8%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(320)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
       {
         // 2-3번 이미지 - 하단
@@ -176,7 +295,7 @@ function IntroScreen() {
         bottom: "8%",
         left: "9%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(320)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     3: [
@@ -186,7 +305,7 @@ function IntroScreen() {
         top: "17%",
         left: "4%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(310)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
       {
         // 3-2번 이미지 - 하단 오른쪽
@@ -194,7 +313,7 @@ function IntroScreen() {
         bottom: "4%",
         right: "12%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(310)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     4: [
@@ -204,7 +323,7 @@ function IntroScreen() {
         top: "9%",
         left: "8%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(300)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     5: [
@@ -214,17 +333,17 @@ function IntroScreen() {
         bottom: "6%",
         right: "7%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(180)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     6: [
       {
         // 6-1번 이미지 - 중앙
         position: "absolute",
-        top: "19%",
-        left: "25%",
+        top: "1%",
+        left: "7%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(190)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     7: [
@@ -234,57 +353,57 @@ function IntroScreen() {
         top: "19%",
         left: "9%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(300)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     8: [
       {
         // 8-1번 이미지 - 중앙
         position: "absolute",
-        top: "20%",
-        left: "25%",
+        top: "1%",
+        left: "7%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(190)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     9: [
       {
         // 9-1번 이미지 - 중앙
         position: "absolute",
-        top: "19%",
-        left: "16%",
+        top: "1%",
+        left: "7%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(245)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     10: [
       {
         // 10-1번 이미지 - 중앙
         position: "absolute",
-        top: "20%",
-        left: "25%",
+        top: "2%",
+        left: "7%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(190)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     11: [
       {
         // 11-1번 이미지 - 중앙
         position: "absolute",
-        top: "17%",
-        left: "24%",
+        top: "5%",
+        left: "14%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(184)}px`,
+        maxWidth: `${getResponsiveImageSize(70)}%`,
       },
     ],
     12: [
       {
         // 12-1번 이미지 - 중앙
         position: "absolute",
-        top: "20%",
-        left: "24%",
+        top: "4%",
+        left: "7%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(195)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     13: [
@@ -294,17 +413,17 @@ function IntroScreen() {
         top: "11%",
         left: "0%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(292)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     14: [
       {
         // 14-1번 이미지 - 중앙
         position: "absolute",
-        top: "20%",
-        left: "25%",
+        top: "4%",
+        left: "7%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(190)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     15: [
@@ -314,17 +433,17 @@ function IntroScreen() {
         top: "30%",
         left: "14%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(268)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     16: [
       {
         // 16-1번 이미지 - 중앙
         position: "absolute",
-        top: "20%",
-        left: "25%",
+        top: "4%",
+        left: "7%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(190)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     17: [
@@ -334,7 +453,7 @@ function IntroScreen() {
         top: "8%",
         left: "0%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(288)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     18: [
@@ -344,18 +463,11 @@ function IntroScreen() {
         top: "10%",
         left: "9%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(298)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     19: [
-      {
-        // 19-1번 비디오 - 중앙
-        position: "absolute",
-        top: "10%",
-        left: "25%",
-        width: "100%",
-        maxWidth: `${getResponsiveImageSize(175)}px`,
-      },
+      // 비디오 카테고리 페이지 - YouTube 링크들
     ],
     20: [
       {
@@ -364,7 +476,7 @@ function IntroScreen() {
         top: "9%",
         left: "9%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(308)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     21: [
@@ -374,7 +486,7 @@ function IntroScreen() {
         top: "9%",
         left: "12%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(264)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     22: [
@@ -384,27 +496,27 @@ function IntroScreen() {
         top: "27%",
         left: "13%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(284)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     23: [
       {
         // 23-1번 이미지 - 중앙
         position: "absolute",
-        top: "35%",
-        left: "31%",
+        top: "20%",
+        left: "10%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(134)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
     24: [
       {
-        // 24-1번 이미지 - 중앙
+        // 24-1번 이미지 - 오른쪽 하단
         position: "absolute",
-        top: "20%",
-        left: "25%",
+        bottom: "5%",
+        right: "5%",
         width: "100%",
-        maxWidth: `${getResponsiveImageSize(200)}px`,
+        maxWidth: `${getResponsiveImageSize(81)}%`,
       },
     ],
   };
@@ -557,6 +669,7 @@ function IntroScreen() {
     }
   ];
 
+
   /**
    * 컴포넌트 마운트 시 애니메이션 시퀀스 실행
    */
@@ -624,10 +737,23 @@ function IntroScreen() {
       // 표지 페이지(0번)로 돌아올 때 애니메이션 재실행
       if (newPage === 0) {
         setTimeout(() => {
-          resetAndRestartAnimation();
+          startCoverPageAnimation();
         }, 300);
       }
     }
+  };
+
+  /**
+   * 표지 페이지 애니메이션 시작 함수
+   */
+  const startCoverPageAnimation = () => {
+    // 애니메이션 상태 초기화
+    resetAnimationStates();
+    
+    // 1초 대기 후 Main-Logo 애니메이션 시작
+    setTimeout(() => {
+      startMainLogoAnimation();
+    }, 1000);
   };
 
   /**
@@ -636,14 +762,38 @@ function IntroScreen() {
   const goToNextPage = () => {
     if (currentPage < 23) { // VQ는 24페이지 (0-23)
       setCurrentPage(currentPage + 1);
+      
+      // 표지 페이지(0번)에서 다음 페이지로 이동할 때 애니메이션 초기화
+      if (currentPage === 0) {
+        resetAnimationStates();
+      }
     }
+  };
+
+  /**
+   * 애니메이션 상태 초기화 함수
+   */
+  const resetAnimationStates = () => {
+    // 기존 애니메이션 정리
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+    
+    // 모든 애니메이션 상태 초기화
+    setMainLogoOpacity(0);
+    setMainLogoScale(0);
+    setMainLogoPosition({ x: 0, y: 0 });
+    setSubTitleOpacity(0);
+    setSubTitleTransform('translateX(-100%)');
+    setSubTitle2Opacity(0);
+    setTitleOpacity(0);
+    setTitleTransform('translateX(-100%)');
   };
 
 
   /**
    * section-img 클릭 핸들러
    * 페이지별 상세 이미지/비디오를 클릭하면 모달로 표시
-   * 특정 이미지(2-1.png)는 3D 모델로 표시
    * @param {string} mediaSrc - 미디어 경로 (이미지 또는 비디오)
    * @param {Event} event - 클릭 이벤트
    * @param {string} pageId - 페이지 ID
@@ -651,14 +801,9 @@ function IntroScreen() {
   const handleSectionImgClick = (mediaSrc, event, pageId) => {
     event.stopPropagation(); // 이벤트 전파 방지
 
-    // 2-1.png 이미지 클릭 시 3D 모델 표시 (VQ 스타일)
-    if (mediaSrc.includes("2-1.png")) {
-      open3DModal();
-    } else {
-      setSelectedGif(mediaSrc);
-      setModalSourcePage(parseInt(pageId));
-      setIsModalOpen(true);
-    }
+    setSelectedGif(mediaSrc);
+    setModalSourcePage(parseInt(pageId));
+    setIsModalOpen(true);
   };
 
   /**
@@ -680,19 +825,9 @@ function IntroScreen() {
     setModalSourcePage(null);
   };
 
-  /**
-   * 3D 모달 열기
-   */
-  const open3DModal = () => {
-    setIs3DModalOpen(true);
-  };
 
-  /**
-   * 3D 모달 닫기
-   */
-  const close3DModal = () => {
-    setIs3DModalOpen(false);
-  };
+
+
 
   /**
    * 홈 버튼 클릭 핸들러 - IntroScreen 재시작
@@ -708,11 +843,15 @@ function IntroScreen() {
     setMainLogoOpacity(0);
     setMainLogoScale(0);
     setMainLogoPosition({ x: 0, y: 0 });
+    setSubTitleOpacity(0);
+    setSubTitleTransform('translateX(-100%)');
+    setSubTitle2Opacity(0);
+    setTitleOpacity(0);
+    setTitleTransform('translateX(-100%)');
     setCurrentPage(0);
     setSelectedGif(null);
     setIsModalOpen(false);
     setModalSourcePage(null);
-    setIs3DModalOpen(false);
 
     // 애니메이션 재시작
     setTimeout(() => {
@@ -734,7 +873,7 @@ function IntroScreen() {
               setWhiteScreenVisible(false);
               setTimeout(() => {
                 setMainScreenVisible(true);
-                startImageAnimation();
+                startCoverPageAnimation();
               }, 500);
             }, 2000);
           }
@@ -743,86 +882,11 @@ function IntroScreen() {
         animationRef.current = requestAnimationFrame(animate);
       };
 
-      const startImageAnimation = () => {
-        // 배경 이미지는 즉시 표시
-        setImageScale(1);
-        setImageOpacity(1);
-        
-        // 1초 대기 후 Main-Logo 애니메이션 시작
-        setTimeout(() => {
-          startMainLogoAnimation();
-        }, 1000);
-      };
-
-      // Main-Logo 애니메이션 함수
-      const startMainLogoAnimation = () => {
-        const startTime = performance.now();
-        const duration = 4000; // 4초 (1초 대기 추가)
-
-        const animate = (currentTime) => {
-          const elapsed = currentTime - startTime;
-          const progress = Math.min(elapsed / duration, 1);
-          
-          // ease-out 효과 적용
-          const easeOut = 1 - Math.pow(1 - progress, 3);
-          
-          // 1단계: opacity 0 → 1, scale 0 → 1.5 (첫 1.5초)
-          if (progress < 0.375) { // 1.5초 / 4초 = 0.375
-            const firstPhaseProgress = progress / 0.375;
-            setMainLogoOpacity(firstPhaseProgress);
-            setMainLogoScale(firstPhaseProgress * 1.5);
-            setMainLogoPosition({ x: 0, y: 0 }); // 중앙 위치
-          }
-          // 대기 단계: 1초 대기 (1.5초~2.5초)
-          else if (progress < 0.625) { // 2.5초 / 4초 = 0.625
-            setMainLogoOpacity(1);
-            setMainLogoScale(1.5);
-            setMainLogoPosition({ x: 0, y: 0 }); // 중앙 위치 유지
-          }
-          // 2단계: 오른쪽 위로 이동하면서 scale 1.5 → 1 (2.5초~4초)
-          else {
-            setMainLogoOpacity(1);
-            const moveProgress = (progress - 0.625) / 0.375; // 1.5초 / 4초 = 0.375
-            setMainLogoScale(1.5 - 0.5 * moveProgress); // 1.5에서 1로 줄어듦
-            // 오른쪽 위로 이동 (화면 크기에 따라 조정)
-            const moveX = moveProgress * 300; // 오른쪽으로 300px
-            const moveY = -moveProgress * 390; // 위로 390px
-            setMainLogoPosition({ x: moveX, y: moveY });
-          }
-
-          if (progress < 1) {
-            animationRef.current = requestAnimationFrame(animate);
-          }
-        };
-
-        animationRef.current = requestAnimationFrame(animate);
-      };
 
       logoAnimation();
     }, 500);
   };
 
-  /**
-   * 표지 페이지로 돌아갈 때 애니메이션 상태 초기화 및 재실행
-   */
-  const resetAndRestartAnimation = () => {
-    // 애니메이션 상태 초기화
-    setImageScale(1.2);
-    setImageOpacity(0);
-    setMainLogoOpacity(0);
-    setMainLogoScale(0);
-    setMainLogoPosition({ x: 0, y: 0 });
-
-    // 기존 애니메이션 정리
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
-
-    // 애니메이션 재시작
-    setTimeout(() => {
-      startImageAnimation();
-    }, 100);
-  };
 
   /**
    * 프린터 버튼 클릭 핸들러 - PDF를 열고 프린트
@@ -991,29 +1055,133 @@ function IntroScreen() {
                   }}
                 />
 
-                {/* 표지 페이지(0번)일 때만 Main-Logo.png 표시 */}
+                {/* 표지 페이지(0번)일 때만 Main-Logo.png와 오버레이 이미지들 표시 */}
                 {currentPage === 0 && (
-                  <div 
-                    className="absolute inset-0 flex items-center justify-center"
-                    style={{
-                      opacity: mainLogoOpacity,
-                      transform: `translate(${mainLogoPosition.x}px, ${mainLogoPosition.y}px) scale(${mainLogoScale})`,
-                      transition: 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out'
-                    }}
-                  >
-                    <img
-                      src="/interacivefile/VQFile/MainImg/Main-Logo.png"
-                      alt="Main Logo"
-                      className="max-w-full max-h-full object-contain"
-                    />
-                  </div>
+                  <>
+                    {/* Main-Logo.png */}
+                    <div 
+                      className="absolute inset-0 flex items-center justify-center"
+                      style={{
+                        opacity: mainLogoOpacity,
+                        transform: `translate(${mainLogoPosition.x}%, ${mainLogoPosition.y}%) scale(${mainLogoScale})`,
+                        transition: 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out'
+                      }}
+                    >
+                      <img
+                        src="/interacivefile/VQFile/MainImg/Main-Logo.png"
+                        alt="Main Logo"
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
+
+                    {/* VQ-Main-subTitle.png - 왼쪽에서 나타남 */}
+                    <div 
+                      className="absolute inset-0"
+                      style={{
+                        opacity: subTitleOpacity,
+                        transform: subTitleTransform,
+                        transition: 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out'
+                      }}
+                    >
+                      <img
+                        src="/interacivefile/VQFile/MainImg/VQ-Main-subTitle.png"
+                        alt="VQ Main SubTitle"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    {/* VQ-Main-subTitle2.png - 바뀌는 이미지 */}
+                    <div 
+                      className="absolute inset-0"
+                      style={{
+                        opacity: subTitle2Opacity,
+                        transition: 'opacity 0.3s ease-in-out'
+                      }}
+                    >
+                      <img
+                        src="/interacivefile/VQFile/MainImg/VQ-Main-subTitle2.png"
+                        alt="VQ Main SubTitle 2"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    {/* VQ-Main-Title.png - 왼쪽에서 나타남 */}
+                    <div 
+                      className="absolute inset-0"
+                      style={{
+                        opacity: titleOpacity,
+                        transform: titleTransform,
+                        transition: 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out'
+                      }}
+                    >
+                      <img
+                        src="/interacivefile/VQFile/MainImg/VQ-Main-Title.png"
+                        alt="VQ Main Title"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </>
                 )}
 
                 {/* 내부 페이지들(1-23번)의 인터랙티브 요소들 */}
                 {currentPage > 0 && (
                   <>
-                    {/* 각 페이지별 section-img 이미지들을 개별적으로 배치 */}
-                    {sectionImgMapping[currentPage + 1] &&
+                    {/* 18번 페이지 - 비디오 카테고리 */}
+                    {currentPage === 18 && (
+                      <div className="absolute inset-0 p-4 overflow-y-auto">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
+                          {videoCategories.map((category, categoryIndex) => (
+                            <div key={categoryIndex} className="flex flex-col">
+                              {/* 카테고리 제목 */}
+                              <h3 
+                                className="text-xl font-black mb-3 text-center"
+                                style={{ 
+                                  color: category.color,
+                                  textShadow: '1px 1px 0px #000000, -1px -1px 0px #000000, 1px -1px 0px #000000, -1px 1px 0px #000000'
+                                }}
+                              >
+                                {category.title}
+                              </h3>
+                              
+                              {/* YouTube 플레이어들 */}
+                              <div className="flex-1 space-y-2">
+                                {category.videos.map((videoUrl, videoIndex) => {
+                                  const videoId = getYouTubeVideoId(videoUrl);
+                                  
+                                  return (
+                                    <div key={videoIndex} className="relative">
+                                      {videoId ? (
+                                        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                                          <iframe
+                                            src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1&fs=1&cc_load_policy=0&iv_load_policy=3&autohide=0`}
+                                            title={`${category.title} ${videoIndex + 1}`}
+                                            frameBorder="0"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                            allowFullScreen
+                                            className="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+                                            style={{ border: 'none' }}
+                                          />
+                                        </div>
+                                      ) : (
+                                        <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center">
+                                          <span className="text-gray-500">비디오 로드 실패</span>
+                                        </div>
+                                      )}
+                                      {/* <p className="text-xs text-gray-600 mt-1 text-center">
+                                        {category.title} {videoIndex + 1}
+                                      </p> */}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 다른 페이지들의 section-img 이미지들을 개별적으로 배치 */}
+                    {currentPage !== 18 && sectionImgMapping[currentPage + 1] &&
                       individualImagePositions[currentPage + 1] && (
                         <>
                           {sectionImgMapping[currentPage + 1].map((mediaSrc, imgIndex) => {
@@ -1130,8 +1298,8 @@ function IntroScreen() {
         </div>
       )}
 
-      {/* 3D 모델 모달 */}
-      {is3DModalOpen && <Model3D onClose={close3DModal} />}
+
+
     </div>
   );
 }
