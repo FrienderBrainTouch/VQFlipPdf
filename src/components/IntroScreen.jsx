@@ -34,6 +34,7 @@ function IntroScreen() {
   const [selectedGif, setSelectedGif] = useState(null); // 선택된 GIF 파일
   const [isModalOpen, setIsModalOpen] = useState(false); // 모달 열림 상태
   const [modalSourcePage, setModalSourcePage] = useState(null); // 모달을 연 페이지
+  const [loadedVideos, setLoadedVideos] = useState(new Set()); // 로드된 비디오 상태 관리
 
   // ref 변수들
   const animationRef = useRef(null);
@@ -47,59 +48,64 @@ function IntroScreen() {
     setImageOpacity(1);
     
     // 1초 대기 후 Main-Logo 애니메이션 시작
+    // setTimeout(() => {
+    //   startMainLogoAnimation();
+    // }, 1000);
+    
+    // Main-Logo 애니메이션 대신 오버레이 애니메이션 바로 시작
     setTimeout(() => {
-      startMainLogoAnimation();
+      startOverlayAnimations();
     }, 1000);
   };
 
   /**
    * Main-Logo 애니메이션 시작 함수
    */
-  const startMainLogoAnimation = () => {
-    const startTime = performance.now();
-    const duration = 4000; // 4초 (1초 대기 추가)
+  // const startMainLogoAnimation = () => {
+  //   const startTime = performance.now();
+  //   const duration = 4000; // 4초 (1초 대기 추가)
 
-    const animate = (currentTime) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
+  //   const animate = (currentTime) => {
+  //     const elapsed = currentTime - startTime;
+  //     const progress = Math.min(elapsed / duration, 1);
       
-      // ease-out 효과 적용
-      const easeOut = 1 - Math.pow(1 - progress, 3);
+  //     // ease-out 효과 적용
+  //     const easeOut = 1 - Math.pow(1 - progress, 3);
       
-      // 1단계: opacity 0 → 1, scale 0 → 1.5 (첫 1.5초)
-      if (progress < 0.375) { // 1.5초 / 4초 = 0.375
-        const firstPhaseProgress = progress / 0.375;
-        setMainLogoOpacity(firstPhaseProgress);
-        setMainLogoScale(firstPhaseProgress * 1.5);
-        setMainLogoPosition({ x: 0, y: 0 }); // 중앙 위치
-      }
-      // 대기 단계: 1초 대기 (1.5초~2.5초)
-      else if (progress < 0.625) { // 2.5초 / 4초 = 0.625
-        setMainLogoOpacity(1);
-        setMainLogoScale(1.5);
-        setMainLogoPosition({ x: 0, y: 0 }); // 중앙 위치 유지
-      }
-      // 2단계: 오른쪽 위로 이동하면서 scale 1.5 → 1 (2.5초~4초)
-      else {
-        setMainLogoOpacity(1);
-        const moveProgress = (progress - 0.625) / 0.375; // 1.5초 / 4초 = 0.375
-        setMainLogoScale(1.5 - 0.5 * moveProgress); // 1.5에서 1로 줄어듦
-        // 오른쪽 위 모서리로 이동 (컨테이너 기준 42%, -41%로 이동)
-        const moveX = moveProgress * 42; // 오른쪽으로 42% 이동
-        const moveY = -moveProgress * 41; // 위로 41% 이동
-        setMainLogoPosition({ x: moveX, y: moveY });
-      }
+  //     // 1단계: opacity 0 → 1, scale 0 → 1.5 (첫 1.5초)
+  //     if (progress < 0.375) { // 1.5초 / 4초 = 0.375
+  //       const firstPhaseProgress = progress / 0.375;
+  //       setMainLogoOpacity(firstPhaseProgress);
+  //       setMainLogoScale(firstPhaseProgress * 1.5);
+  //       setMainLogoPosition({ x: 0, y: 0 }); // 중앙 위치
+  //     }
+  //     // 대기 단계: 1초 대기 (1.5초~2.5초)
+  //     else if (progress < 0.625) { // 2.5초 / 4초 = 0.625
+  //       setMainLogoOpacity(1);
+  //       setMainLogoScale(1.5);
+  //       setMainLogoPosition({ x: 0, y: 0 }); // 중앙 위치 유지
+  //     }
+  //     // 2단계: 오른쪽 위로 이동하면서 scale 1.5 → 1 (2.5초~4초)
+  //     else {
+  //       setMainLogoOpacity(1);
+  //       const moveProgress = (progress - 0.625) / 0.375; // 1.5초 / 4초 = 0.375
+  //       setMainLogoScale(1.5 - 0.5 * moveProgress); // 1.5에서 1로 줄어듦
+  //       // 오른쪽 위 모서리로 이동 (컨테이너 기준 42%, -41%로 이동)
+  //       const moveX = moveProgress * 42; // 오른쪽으로 42% 이동
+  //       const moveY = -moveProgress * 41; // 위로 41% 이동
+  //       setMainLogoPosition({ x: moveX, y: moveY });
+  //     }
 
-      if (progress < 1) {
-        animationRef.current = requestAnimationFrame(animate);
-      } else {
-        // Main-Logo 애니메이션 완료 후 오버레이 애니메이션 시작
-        startOverlayAnimations();
-      }
-    };
+  //     if (progress < 1) {
+  //       animationRef.current = requestAnimationFrame(animate);
+  //     } else {
+  //       // Main-Logo 애니메이션 완료 후 오버레이 애니메이션 시작
+  //       startOverlayAnimations();
+  //     }
+  //   };
 
-    animationRef.current = requestAnimationFrame(animate);
-  };
+  //   animationRef.current = requestAnimationFrame(animate);
+  // };
 
   /**
    * 오버레이 애니메이션 시작 함수
@@ -275,6 +281,15 @@ function IntroScreen() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  /**
+   * 페이지 변경 시 비디오 정리 (메모리 절약)
+   */
+  useEffect(() => {
+    if (currentPage !== 18) {
+      setLoadedVideos(new Set());
+    }
+  }, [currentPage]);
 
   // VQ 페이지별 개별 이미지 위치 설정 (절대 위치)
   const individualImagePositions = {
@@ -757,8 +772,13 @@ function IntroScreen() {
     resetAnimationStates();
     
     // 1초 대기 후 Main-Logo 애니메이션 시작
+    // setTimeout(() => {
+    //   startMainLogoAnimation();
+    // }, 1000);
+    
+    // Main-Logo 애니메이션 대신 오버레이 애니메이션 바로 시작
     setTimeout(() => {
-      startMainLogoAnimation();
+      startOverlayAnimations();
     }, 1000);
   };
 
@@ -1069,8 +1089,8 @@ function IntroScreen() {
                 {/* 표지 페이지(0번)일 때만 Main-Logo.png와 오버레이 이미지들 표시 */}
                 {currentPage === 0 && (
                   <>
-                    {/* Main-Logo.png */}
-                    <div 
+                    {/* Main-Logo.png - 주석처리 */}
+                    {/* <div 
                       className="absolute inset-0 flex items-center justify-center"
                       style={{
                         opacity: mainLogoOpacity,
@@ -1082,6 +1102,15 @@ function IntroScreen() {
                         src="/interacivefile/VQFile/MainImg/Main-Logo.png"
                         alt="Main Logo"
                         className="max-w-full max-h-full object-contain"
+                      />
+                    </div> */}
+
+                    {/* Main-LogoLarge.png - 고정 배치 */}
+                    <div className="absolute inset-0">
+                      <img
+                        src="/interacivefile/VQFile/MainImg/Main-LogoLage.png"
+                        alt="Main Logo Large"
+                        className="w-full h-full object-cover"
                       />
                     </div>
 
@@ -1158,29 +1187,55 @@ function IntroScreen() {
                               <div className="flex-1 space-y-2">
                                 {category.videos.map((videoUrl, videoIndex) => {
                                   const videoId = getYouTubeVideoId(videoUrl);
+                                  const videoKey = `${categoryIndex}-${videoIndex}`;
+                                  const isLoaded = loadedVideos.has(videoKey);
                                   
                                   return (
                                     <div key={videoIndex} className="relative">
                                       {videoId ? (
-                                        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                                          <iframe
-                                            src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1&fs=1&cc_load_policy=0&iv_load_policy=3&autohide=0`}
-                                            title={`${category.title} ${videoIndex + 1}`}
-                                            frameBorder="0"
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                            allowFullScreen
-                                            className="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
-                                            style={{ border: 'none' }}
-                                          />
+                                        <div className="relative w-full" style={{ paddingBottom: '56.25%', pointerEvents: 'auto' }}>
+                                          {isLoaded ? (
+                                            <iframe
+                                              src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1&fs=1&cc_load_policy=0&iv_load_policy=3&autohide=0`}
+                                              title={`${category.title} ${videoIndex + 1}`}
+                                              frameBorder="0"
+                                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                              allowFullScreen
+                                              className="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+                                              style={{ 
+                                                border: 'none',
+                                                pointerEvents: 'auto',
+                                                zIndex: 1
+                                              }}
+                                            />
+                                          ) : (
+                                            <div 
+                                              className="absolute top-0 left-0 w-full h-full bg-gray-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-300 transition-all duration-300 group"
+                                              onClick={() => {
+                                                setLoadedVideos(prev => new Set([...prev, videoKey]));
+                                              }}
+                                            >
+                                              <img 
+                                                src={getYouTubeThumbnail(videoId, 'hqdefault')}
+                                                alt={`${category.title} ${videoIndex + 1} 썸네일`}
+                                                className="w-full h-full object-cover rounded-lg"
+                                              />
+                                              <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg group-hover:bg-black/60 transition-colors duration-300">
+                                                <div className="text-white text-center">
+                                                  <svg className="w-12 h-12 mx-auto mb-2 drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M8 5v14l11-7z"/>
+                                                  </svg>
+                                                  <p className="text-sm font-semibold drop-shadow-lg">클릭하여 재생</p>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )}
                                         </div>
                                       ) : (
                                         <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center">
                                           <span className="text-gray-500">비디오 로드 실패</span>
                                         </div>
                                       )}
-                                      {/* <p className="text-xs text-gray-600 mt-1 text-center">
-                                        {category.title} {videoIndex + 1}
-                                      </p> */}
                                     </div>
                                   );
                                 })}
