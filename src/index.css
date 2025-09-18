@@ -1,7 +1,7 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
-  font-family: "Bricolage Grotesque", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Bricolage Grotesque', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color-scheme: light dark;
@@ -55,7 +55,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(to right, rgba(0,0,0,0.1), transparent);
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.1), transparent);
   pointer-events: none;
   z-index: 1;
 }
@@ -78,18 +78,17 @@ body {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* 버튼 호버 효과 개선 */
 button {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
 }
 
 /* 모달 애니메이션 */
@@ -120,23 +119,23 @@ button:hover {
   .perspective-1000 {
     perspective: 800px;
   }
-  
+
   /* 모바일에서 스크롤 개선 */
   * {
     -webkit-overflow-scrolling: touch;
   }
-  
+
   /* 모바일에서 스크롤바 표시 */
   ::-webkit-scrollbar {
     width: 6px;
     background: transparent;
   }
-  
+
   ::-webkit-scrollbar-thumb {
     background-color: rgba(156, 163, 175, 0.5);
     border-radius: 3px;
   }
-  
+
   ::-webkit-scrollbar-track {
     background-color: rgba(229, 231, 235, 0.3);
     border-radius: 3px;
