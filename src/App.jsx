@@ -1,65 +1,96 @@
-import React, { useState } from "react";
-import Header from "./components/Header";
-import Book from "./components/Book";
-import VQBook from "./components/VQBook";
-import IntroScreen from "./components/IntroScreen";
+import React, { useEffect, useState } from 'react';
+import Header from './components/Header';
+import Book from './components/Book';
+import VQBook from './components/VQBook';
+import IntroScreen from './components/IntroScreen';
+import VQMainPage from './components/VQMainPage';
+import CompanyPage from './components/CompanyPage';
+import ContactPage from './components/ContactPage';
+import PortfolioPage from './components/PortfolioPage';
+import Chatbot from './components/Chatbot';
 
-/**
- * 메인 애플리케이션 컴포넌트
- * 
- * 이 컴포넌트는 플립북 애플리케이션의 루트 컴포넌트입니다.
- * 주요 기능:
- * - Friender와 VQ 프로젝트 간 전환 관리
- * - 헤더와 플립북 컴포넌트 렌더링
- * - 전역 상태 관리
- */
 function App() {
-  // URL 경로에서 책 타입을 읽어오거나 기본값 사용
+  /** 대화 로그를 전역(최상단)에서 관리 */
+  const [logs, setLogs] = useState([]);
+
+  /** 최초 진입 시 URL에 따라 화면 분기 */
   const getInitialBookType = () => {
     const path = window.location.pathname;
-    
-    // 경로에 따라 다른 컴포넌트 반환
-    if (path === '/friender') {
-      return 'friender';
-    } else if (path === '/vq') {
-      return 'vq';
-    } else {
-      // 기본 경로(/)는 IntroScreen 표시
-      return 'intro';
-    }
+    if (path === '/friender') return 'friender';
+    if (path === '/vq') return 'vq';
+    if (path === '/vq-main') return 'vq-main';
+    if (path === '/company') return 'company';
+    if (path === '/contact') return 'contact';
+    if (path === '/portfolio') return 'portfolio';
+    if (path === '/catalog') return 'catalog';
+    return 'vq-main'; // 기본값을 vq-main으로 변경
   };
 
-  // 현재 선택된 책 상태
+  /** 현재 화면 상태 */
   const [selectedBook, setSelectedBook] = useState(getInitialBookType());
 
-  /**
-   * 책 변경 핸들러
-   * 사용자가 다른 프로젝트를 선택할 때 호출
-   * @param {string} bookType - 선택된 책 타입 ("friender", "vq", "intro")
-   */
+  /** 화면(라우팅) 전환 핸들러 */
   const handleBookChange = (bookType) => {
     setSelectedBook(bookType);
-    
-    // URL 경로 업데이트
-    const newPath = bookType === 'intro' ? '/' : `/${bookType}`;
+    const newPath = bookType === 'vq-main' ? '/' : `/${bookType}`;
     window.history.pushState({}, '', newPath);
   };
 
-  // IntroScreen인 경우 별도 렌더링
-  if (selectedBook === 'intro') {
-    return <IntroScreen />;
+  const handleUserMessage = (text, raw) => {
+    // 예: 사용자가 "go vq"라고 입력하면 /vq로 이동
+    if (text?.toLowerCase() === 'go vq') {
+      handleBookChange('vq');
+    }
+
+    console.log('👤 사용자 입력:', text);
+
+    setLogs((prev) => [...prev, { role: 'user', text, raw }]);
+  };
+
+  const handleBotMessage = (text, raw) => {
+    console.log('🤖 챗봇 응답:', text);
+    setLogs((prev) => [...prev, { role: 'bot', text, raw }]);
+  };
+
+  useEffect(() => {
+    // console.log('🧾 최신 로그 상태:', logs);
+  }, [logs]);
+
+  // VQ 메인 페이지 (기본 페이지)
+  if (selectedBook === 'vq-main') {
+    return <VQMainPage />;
   }
 
+  // 회사소개 페이지
+  if (selectedBook === 'company') {
+    return <CompanyPage />;
+  }
+
+  // 문의하기 페이지
+  if (selectedBook === 'contact') {
+    return <ContactPage />;
+  }
+
+  // 포트폴리오 페이지
+  if (selectedBook === 'portfolio') {
+    return <PortfolioPage />;
+  }
+
+  // 카탈로그 페이지
+  if (selectedBook === 'catalog') {
+    return (
+      <div className="w-full min-h-screen bg-[#0e1a26]">
+        <IntroScreen onBack={() => handleBookChange('vq-main')} />
+        <Chatbot onUserMessage={handleUserMessage} onBotMessage={handleBotMessage} />
+      </div>
+    );
+  }
+
+  // 그 외 화면
   return (
     <div className="w-full min-h-screen bg-[#0e1a26]">
-      {/* 헤더 컴포넌트 */}
       <Header selectedBook={selectedBook} onBookChange={handleBookChange} />
-      
-      {/* 메인 콘텐츠 영역 */}
-      <div className="flex-1">
-        {/* 선택된 책에 따라 적절한 플립북 컴포넌트 렌더링 */}
-        {selectedBook === "friender" ? <Book /> : <VQBook />}
-      </div>
+      <div className="flex-1">{selectedBook === 'friender' ? <Book /> : <VQBook />}</div>
     </div>
   );
 }

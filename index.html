@@ -14,47 +14,6 @@
   </head>
   <body>
     <div id="root"></div>
-
-    <div
-      id="chatbot"
-      style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 9999;
-      "
-    >
-      <div style="pointer-events: auto">
-        <link rel="stylesheet" href="https://www.gstatic.com/dialogflow-console/fast/df-messenger/prod/v1/themes/df-messenger-default.css">
-        <script src="https://www.gstatic.com/dialogflow-console/fast/df-messenger/prod/v1/df-messenger.js"></script>
-        <df-messenger
-          project-id="hani-chatbot"
-          agent-id="d90a86ac-e04e-4685-80f2-eec780081d87"
-          language-code="ko"
-          max-query-length="-1">
-          <df-messenger-chat-bubble
-            chat-title="VQ">
-          </df-messenger-chat-bubble>
-        </df-messenger>
-        <style>
-          df-messenger {
-            z-index: 999;
-            position: fixed;
-            --df-messenger-font-color: #000;
-            --df-messenger-font-family: Google Sans;
-            --df-messenger-chat-background: #f3f6fc;
-            --df-messenger-message-user-background: #d3e3fd;
-            --df-messenger-message-bot-background: #fff;
-            bottom: 16px;
-            right: 16px;
-          }
-        </style>
-      </div>
-    </div>
-
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
