@@ -121,11 +121,11 @@ function Chatbot({ onBotMessage, onUserMessage }) {
         <df-messenger
           ref={dfMessengerRef}
           project-id="hani-chatbot"
-          agent-id="96e19dec-db9e-45b2-91ce-084c8b8a39b0"
-          language-code="en"
+          agent-id="d90a86ac-e04e-4685-80f2-eec780081d87"
+          language-code="ko"
           max-query-length="-1"
         >
-          <df-messenger-chat-bubble chat-title="vq_test_chatbot" />
+          <df-messenger-chat-bubble chat-title="VQ" />
         </df-messenger>
 
         <style>
